@@ -1,5 +1,13 @@
 # GBL Root Canoe working agreement
 
+## OnePlus 15 Boot Manager Phase 1 override
+
+This full-history fork owns the independent OnePlus 15 A/B selector experiment. Keep upstream `main` unchanged and make experimental work only on `feature/grub-style-ab-menu` until physical qualification. Do not edit any sibling OxygenOS or LineageOS kernel repository.
+
+Hardware flashing, partition writes, slot changes, bootloader lock-state changes, userdata formatting, and disruptive device reboots are prohibited during this development phase. The inactive Android slot must remain unavailable unless a complete SM8850 slot transition is separately verified and reviewed. Never infer a slot switch from a `boot_a.efi` or `boot_b.efi` filename. Preserve the original Canoe menu as the default fallback and label all generated firmware artifacts `EXPERIMENTAL — NOT VALIDATED ON HARDWARE`.
+
+The browser prototype in `ui-prototype/` is simulation-only. It must never gain ADB, fastboot, WebUSB, Android, flashing, or partition access. Its concepts should correspond to `SuperFbPhase1Model.c`, but the native menu stays UEFI-only.
+
 ## Runtime model
 
 This repository owns the post-authentication Canoe path:

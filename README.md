@@ -1,57 +1,53 @@
-# GBL Root Canoe
+# OnePlus 15 Boot Manager
 
-[中文版](README_zh.md)
+> **EXPERIMENTAL — NOT VALIDATED ON HARDWARE**
 
-Linux host: install the [scoped USB access rule](wiki/docs/linux-usb.md) once
-(udev/systemd-logind; [review the rule](https://github.com/1vivy/canoe-nusb-storage/blob/bbc4efa4dc9a47cf51319ac3a1b5d224b7e344f4/contrib/udev/70-canoe-managed-usb.rules)):
+A GRUB-style native UEFI boot selector for the OnePlus 15 (Qualcomm SM8850), built as a full-history fork of [GBL Root Canoe](https://github.com/1vivy/gbl_root_canoe). This repository is independent of the OxygenOS and LineageOS kernel repositories.
+
+Phase 1 provides five menu destinations:
+
+- Android — Slot A
+- Android — Slot B
+- Recovery
+- CANOE Super Fastboot
+- Android userspace Fastbootd
+
+This is an A/B selector experiment, not independent dual-boot support. It does not flash images, change the bootloader lock state, mark slots successful, or implement a verified GPT slot transition. Only the slot already marked active by the SM8850 boot chain can become available, and only after its prepared loader, `.gm2p`, `.tzmap`, and retry metadata pass validation. The inactive Android row stays visible and disabled.
+
+## Status
+
+- Native UEFI menu: implemented behind opt-in `boot-manager-menu phase1`.
+- Original Canoe menu: retained and remains the default (`boot-manager-menu canoe`).
+- Browser prototype: [ui-prototype](ui-prototype/README.md), simulation only.
+- Host policy/config tests: implemented.
+- AArch64 UEFI build: supported by the inherited Canoe Docker toolchain.
+- Phone flashing and hardware validation: explicitly out of scope for this phase.
+
+## Quick checks
 
 ```sh
-(
-  rule_dir=$(mktemp -d) &&
-  trap 'rm -rf "$rule_dir"' EXIT &&
-  curl -fL https://raw.githubusercontent.com/1vivy/canoe-nusb-storage/bbc4efa4dc9a47cf51319ac3a1b5d224b7e344f4/contrib/udev/70-canoe-managed-usb.rules -o "$rule_dir/70-canoe-managed-usb.rules" &&
-  sudo install -m 0644 "$rule_dir/70-canoe-managed-usb.rules" /etc/udev/rules.d/70-canoe-managed-usb.rules &&
-  sudo udevadm control --reload-rules &&
-  sudo udevadm trigger --action=change --subsystem-match=usb --attr-match=idVendor=1209 --attr-match=idProduct=ca0f --settle
-)
+make test
+docker build -t gbl_builder - < Dockerfile
+docker run --rm -v "$PWD:/workspace" -w /workspace gbl_builder \
+  bash -lc 'make -C submodules/uefi clean && make -C submodules/uefi build && make -C submodules/uefi tools'
+docker run --rm -v "$PWD/ui-prototype:/app" -w /app node:22-alpine \
+  sh -lc 'npm test && npm run build'
 ```
 
-CANOE-BDS supplies a managed boot environment for supported Qualcomm devices.
-Mode 1/2 can present a locked device to Android without relocking the physical
-bootloader.
+No command above accesses a phone.
 
-```text
-signed vulnerable ABL → raw efisp:BDS.efi → persist/efisp.fat → selected loader
-```
+## Documentation
 
-The boot root is a FAT16 container on ext4 persist, sized from available space in
-8 MiB increments (8–256 MiB). BDS mounts it, loads per-slot EFI/GM2P/TZ-map
-triplets and discovers EFI/BLS entries. Ordinary selections affect this boot;
-Advanced saves the default, managed-entry mode or boot policy independently.
+- [Architecture](docs/ARCHITECTURE.md)
+- [Boot menu and configuration](docs/BOOT_MENU.md)
+- [A/B slot safety](docs/AB_SLOT_SWITCHING.md)
+- [Recovery and fastboot paths](docs/RECOVERY_FASTBOOT.md)
+- [Testing evidence and limits](docs/TESTING.md)
+- [Rollback](docs/ROLLBACK.md)
+- [Upstream baseline and dependency record](docs/UPSTREAM.md)
 
-The 7.0.11 release surface is the hosted Canoe Boot Manager and activated
-KernelSU WebUI. The [hosted app](https://canoe-boot-manager.1vv.ca) uses WASM and
-managed USB; the module bundles its WebUI and native Android worker. Module
-installation installs the manager only. Desktop executables and filesystem
-sidecars are retired; the `7.0.0-b4-final` tag preserves the preceding stack.
+The original Canoe operator and implementation documentation remains under [`wiki/`](wiki/) and the historical reconstruction material remains under [`docs/`](docs/).
 
-- [Install from a host or KernelSU](wiki/docs/install.md)
-- [Reinstall from gbl-chainload, 6.3.5, or another EFISP mod](wiki/docs/reinstall.md)
-- [Commands](wiki/docs/commands.md) and [configuration](wiki/docs/canoe-cfg.md)
-- [OTA](wiki/docs/ota.md) and [format-data assessment](wiki/docs/format-data.md)
-- [USB mass storage](wiki/docs/mass-storage.md) and [uninstall](wiki/docs/uninstall.md)
-- [Release pipeline](wiki/docs/release.md)
+## License and attribution
 
-Legacy ext4 `efisp/` directories are ignored and never imported. Deployment
-publishes the managed Android entries itself; only extra EFI/BLS rows are
-recreated by hand. The app offers reviewed cleanup of old mod files, which is
-worth doing before provisioning because the container is sized from free persist
-space. A matching signer does not
-prove OEM identity or that a firmware image suits another slot. Release notes
-state the qualification performed on each published build.
-
-## License and history
-
-The project is GPL-2.0-or-later. [ARCHIVE.md](ARCHIVE.md) records historical 6.x
-material; [the b5 reconstruction audit](docs/b5-reconstruction.md) describes the
-architecture change that this release completes.
+The complete upstream Git history, copyright notices, contributor records, and GPL-2.0-or-later [`LICENSE`](LICENSE) are preserved. New firmware files use the license style of their containing Canoe/Qualcomm source area. See [UPSTREAM.md](docs/UPSTREAM.md).

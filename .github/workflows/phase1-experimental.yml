@@ -1,0 +1,79 @@
+name: Phase 1 Experimental
+
+on:
+  push:
+    branches: [feature/grub-style-ab-menu]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase1-experimental-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prototype-and-host-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87
+        with:
+          toolchain: 1.98.0
+      - name: Test and build browser prototype
+        working-directory: ui-prototype
+        run: |
+          npm test
+          npm run build
+      - name: Validate configuration parser and example
+        run: |
+          cargo test --locked --manifest-path tools/canoe-bootmgr/Cargo.toml
+          example_root="$(mktemp -d)"
+          cp config/examples/phase1.canoe.cfg "$example_root/canoe.cfg"
+          cargo run --locked --manifest-path tools/canoe-bootmgr/Cargo.toml -- \
+            --boot-root "$example_root" config show >/dev/null
+      - name: Run UEFI host contracts
+        run: make -C submodules/uefi test
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: phase1-ui-prototype-${{ github.sha }}
+          path: ui-prototype/dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  experimental-firmware:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Build upstream-supported firmware container
+        run: docker build -t gbl_builder - < Dockerfile
+      - name: Build BDS and inherited EFI tools from clean objects
+        run: |
+          docker run --rm -v "$PWD:/workspace" -w /workspace gbl_builder bash -lc \
+            'make -C submodules/uefi clean && make -C submodules/uefi build && make -C submodules/uefi tools'
+      - name: Stage experimental artifacts and checksums
+        run: |
+          mkdir -p .work/phase1-experimental
+          cp submodules/uefi/build/*.efi .work/phase1-experimental/
+          printf '%s\n' 'EXPERIMENTAL — NOT VALIDATED ON HARDWARE' > \
+            .work/phase1-experimental/EXPERIMENTAL-NOT-VALIDATED-ON-HARDWARE.txt
+          (cd .work/phase1-experimental && sha256sum -- *.efi > SHA256SUMS)
+          git rev-parse HEAD > .work/phase1-experimental/SOURCE_COMMIT
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: phase1-experimental-firmware-${{ github.sha }}
+          path: .work/phase1-experimental/
+          if-no-files-found: error
+          retention-days: 14
