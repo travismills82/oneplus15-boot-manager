@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 #include "SuperFbBootOnce.h"
 #include "SuperFbLaunchPolicy.h"
+#include "SuperFbPhase1Menu.h"
 
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
@@ -455,7 +456,9 @@ SfbBootOnceExecute (
   } else {
     SfbSetLaunchLockPolicy (Menu.ConfigValid ? Menu.LockPolicy
                                              : SfbConfigLockAsNeeded);
-    Status = SfbLaunchEntry (&Menu.Entry[Index], FALSE, Request->Mode);
+    Status = SfbLaunchEntryWithRetryPolicy (
+               &Menu.Entry[Index], FALSE, Request->Mode,
+               Request->ResetActiveSlotRetry);
     if (EFI_ERROR (Status)) {
       DEBUG ((EFI_D_ERROR, "SFB: boot-once target '%a' failed: %r\n",
               Request->Selector, Status));
@@ -467,7 +470,10 @@ SfbBootOnceExecute (
 }
 
 SFB_BOOT_ONCE_RESULT
-SfbBootOnceConsume (IN SFB_BOOT_MODE Mode)
+SfbBootOnceConsumePolicy (
+  IN SFB_BOOT_MODE Mode,
+  IN BOOLEAN       AllowConfiguredLaunch
+  )
 {
   SFB_BOOT_ONCE_REQUEST     Request;
   SFB_BOOT_ONCE_EXEC_RESULT Exec;
@@ -489,6 +495,15 @@ SfbBootOnceConsume (IN SFB_BOOT_MODE Mode)
     return SfbBootOnceNone;
   }
 
+  if (!AllowConfiguredLaunch && AsciiStrCmp (Selector, "fastboot") != 0 &&
+      !SfbPhase1BootOnceSelectorReady (Selector, Mode)) {
+    DEBUG ((EFI_D_WARN,
+            "SFB: MARK boot-once phase1-refused=1 selector='%a'\n",
+            Selector));
+    mNotice = SfbBootOnceNoticeRecordDropped;
+    return SfbBootOnceMenu;
+  }
+
   /*
    * The record was cleared before this point, so nothing can re-arm it once the
    * standard command lands and the device resets into the target without this
@@ -499,6 +514,7 @@ SfbBootOnceConsume (IN SFB_BOOT_MODE Mode)
   Request.Target = Target;
   Request.Mode = Mode;
   Request.AllowDefault = FALSE;
+  Request.ResetActiveSlotRetry = AllowConfiguredLaunch;
   Exec = SfbBootOnceExecute (&Request, NULL, NULL, &TargetPending);
   DEBUG ((EFI_D_INFO,
           "SFB: MARK boot-once armed=1 selector='%a' exec=%u target-pending=%u\n",
@@ -517,6 +533,12 @@ SfbBootOnceConsume (IN SFB_BOOT_MODE Mode)
                             : SfbBootOnceNoticeRecordDropped;
   }
   return SfbBootOnceMenu;
+}
+
+SFB_BOOT_ONCE_RESULT
+SfbBootOnceConsume (IN SFB_BOOT_MODE Mode)
+{
+  return SfbBootOnceConsumePolicy (Mode, TRUE);
 }
 
 SFB_BOOT_ONCE_NOTICE

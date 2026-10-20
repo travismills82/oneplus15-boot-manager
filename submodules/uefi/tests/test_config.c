@@ -61,6 +61,7 @@ TestDefaultsWhenOmitted (void)
   assert (gConfig.Valid);
   assert (gConfig.Count == 1);
   assert (gConfig.MenuMode == SfbConfigMenuSilent);
+  assert (gConfig.BootMenu == SfbConfigBootMenuCanoe);
   assert (gConfig.KeyWindowMs == SFB_CONFIG_KEY_WINDOW_DEFAULT);
   assert (gConfig.MenuTimeoutSeconds == 3);
   assert (gConfig.Mode == SFB_CONFIG_MODE_FAKE_LOCKED);
@@ -76,6 +77,19 @@ TestDefaultsWhenOmitted (void)
   assert (strcmp (gConfig.Entry[0].Image, "\\boot.efi") == 0);
   assert (!gConfig.Entry[0].ModeExplicit);
   assert (gConfig.Entry[0].Role == SfbConfigRoleOther);
+}
+
+static void
+TestBootManagerMenu (void)
+{
+  assert (Parse ("version 1\nboot-manager-menu phase1\n"
+                 "entry a\n  image boot_a.efi\n"));
+  assert (gConfig.BootMenu == SfbConfigBootMenuPhase1);
+  assert (gConfig.RejectedLines == 0);
+  assert (Parse ("version 1\nboot-manager-menu unsupported\n"
+                 "entry a\n  image boot_a.efi\n"));
+  assert (gConfig.BootMenu == SfbConfigBootMenuCanoe);
+  assert (gConfig.RejectedLines == 1);
 }
 
 static void
@@ -615,6 +629,7 @@ main (void)
   TestAddFastbootEntry ();
   TestVersionIsMandatory ();
   TestDefaultsWhenOmitted ();
+  TestBootManagerMenu ();
   TestFastbootAction ();
   TestPerEntryModePrecedence ();
   TestKeyScopingAfterTheFirstEntry ();

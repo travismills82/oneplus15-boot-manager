@@ -59,6 +59,7 @@ typedef struct {
   REBOOT_BOOT_ONCE_TARGET   Target;
   SFB_BOOT_MODE             Mode;
   BOOLEAN                   AllowDefault;
+  BOOLEAN                   ResetActiveSlotRetry;
 } SFB_BOOT_ONCE_REQUEST;
 
 /* Invoked once by SfbBootOnceExecute after every refusal check and the
@@ -99,6 +100,15 @@ SfbBootOnceExecute (
 /* Clear before resolving or launching; failures fall through to normal policy. */
 SFB_BOOT_ONCE_RESULT
 SfbBootOnceConsume (IN SFB_BOOT_MODE Mode);
+
+/* Phase 1 uses FALSE so a stored selector must pass its active-slot and sidecar
+ * gates and launches without refreshing GPT retry metadata. The record is
+ * still consumed atomically; invalid selectors fall back to the menu. */
+SFB_BOOT_ONCE_RESULT
+SfbBootOnceConsumePolicy (
+  IN SFB_BOOT_MODE Mode,
+  IN BOOLEAN       AllowConfiguredLaunch
+  );
 
 /* Selector represented by a menu row, or NULL when that row cannot be armed. */
 CONST CHAR8 *

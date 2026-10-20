@@ -12,6 +12,7 @@ pub(crate) fn serialize(config: &ConfigDocument) -> Result<Vec<u8>, ConfigError>
         "version 1".to_owned(),
         format!("generation {}", config.generation),
         format!("menu-mode {}", config.menu_mode.as_str()),
+        format!("boot-manager-menu {}", config.boot_manager_menu.as_str()),
         format!("key-window {}", config.key_window_ms),
         format!("menu-timeout {}", config.menu_timeout_s),
         format!(
@@ -67,6 +68,7 @@ fn validate_document(config: &ConfigDocument) -> Result<(), ConfigError> {
     }
     validate_policy(PolicyUpdate {
         menu_mode: Some(config.menu_mode),
+        boot_manager_menu: Some(config.boot_manager_menu),
         key_window_ms: Some(config.key_window_ms),
         menu_timeout_s: Some(config.menu_timeout_s),
         show_booting: Some(config.show_booting),
@@ -138,6 +140,7 @@ fn validate_raw(line: &crate::config::RawLine) -> Result<(), ConfigError> {
             "version"
                 | "generation"
                 | "menu-mode"
+                | "boot-manager-menu"
                 | "key-window"
                 | "menu-timeout"
                 | "show-booting"

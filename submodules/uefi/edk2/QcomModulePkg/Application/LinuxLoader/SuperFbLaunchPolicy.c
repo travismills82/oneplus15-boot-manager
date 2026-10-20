@@ -302,13 +302,14 @@ SfbPersistBootRecord (UINT8 *Record)
 }
 
 EFI_STATUS
-SfbLaunchImage (
+SfbLaunchImageWithRetryPolicy (
   IN EFI_DEVICE_PATH_PROTOCOL *DevicePath,
   IN BOOLEAN                  Managed,
   IN SFB_BOOT_MODE            EffectiveMode,
   IN CONST SFB_MODE2_PROFILE *Profile,
   IN CONST SFB_TZ_MAP         *TzMap,
-  IN CONST CHAR16             *LoadOptions
+  IN CONST CHAR16             *LoadOptions,
+  IN BOOLEAN                  ResetActiveSlotRetry
   )
 {
   EFI_STATUS Status;
@@ -453,7 +454,7 @@ SfbLaunchImage (
             (UINT32)StrLen (LoadOptions)));
   }
 
-  if (Managed) {
+  if (Managed && ResetActiveSlotRetry) {
     EFI_STATUS RetryResetStatus;
 
     /*
@@ -520,4 +521,19 @@ SfbLaunchImage (
     FreePool (ExitData);
   }
   return Status;
+}
+
+EFI_STATUS
+SfbLaunchImage (
+  IN EFI_DEVICE_PATH_PROTOCOL *DevicePath,
+  IN BOOLEAN                   Managed,
+  IN SFB_BOOT_MODE             EffectiveMode,
+  IN CONST SFB_MODE2_PROFILE  *Profile,
+  IN CONST SFB_TZ_MAP          *TzMap,
+  IN CONST CHAR16              *LoadOptions
+  )
+{
+  return SfbLaunchImageWithRetryPolicy (
+           DevicePath, Managed, EffectiveMode, Profile, TzMap, LoadOptions,
+           TRUE);
 }

@@ -12,13 +12,14 @@ CFLAGS += $(SFB_VERSION_CFLAGS)
 
 .PHONY: test clean
 
-test: test_usb_serial test_profile test_deviceinfo test_devinfo test_slot_attributes test_slot_retries test_last_launch test_boot_root test_tzmap test_fat test_hooks test_launch test_config test_config_store test_bls test_linuxboot test_log test_surface test_md_table test_md_discovery test_md_shadow test_eud_model test_soc_info
+test: test_usb_serial test_profile test_deviceinfo test_devinfo test_slot_attributes test_slot_retries test_phase1_model test_last_launch test_boot_root test_tzmap test_fat test_hooks test_launch test_config test_config_store test_bls test_linuxboot test_log test_surface test_md_table test_md_discovery test_md_shadow test_eud_model test_soc_info
 	./test_usb_serial
 	./test_profile
 	./test_deviceinfo
 	./test_devinfo
 	./test_slot_attributes
 	./test_slot_retries
+	./test_phase1_model
 	./test_last_launch
 	./test_boot_root
 	./test_tzmap
@@ -98,6 +99,10 @@ test_config: test_config.c \
 	../edk2/QcomModulePkg/Application/LinuxLoader/SuperFbConfig.c \
 	../edk2/QcomModulePkg/Application/LinuxLoader/SuperFbBootPath.h
 	$(CC) $(CFLAGS) -DSFB_HOST_BUILD -o $@ $(filter %.c,$^)
+
+test_phase1_model: test_phase1_model.c \
+	../edk2/QcomModulePkg/Application/LinuxLoader/SuperFbPhase1Model.c
+	$(CC) $(CFLAGS) -DSFB_HOST_BUILD -o $@ $^
 
 # Pure Boot Loader Specification Type #1 parser: same shape as test_config,
 # no EDK2 types, so it builds against stdint.
@@ -222,7 +227,7 @@ clean:
 	rm -f test_fastboot_rx
 	rm -f test_root_observation
 	rm -f test_reboot_targets test_boot_once test_pstore
-	rm -f test_raw_persist_export test_ext4_lifecycle test_fastboot_response test_ext4_checksums test_last_boot_store test_usb_serial test_msd_lease test_image_map test_image_disk test_container test_profile test_deviceinfo test_devinfo test_slot_attributes test_slot_retries test_last_launch test_tzmap test_fat test_hooks test_launch test_config test_config_store test_bls test_linuxboot test_log test_surface test_md_table test_md_discovery test_md_shadow test_eud_model test_soc_info
+	rm -f test_raw_persist_export test_ext4_lifecycle test_fastboot_response test_ext4_checksums test_last_boot_store test_usb_serial test_msd_lease test_image_map test_image_disk test_container test_profile test_deviceinfo test_devinfo test_slot_attributes test_slot_retries test_phase1_model test_last_launch test_tzmap test_fat test_hooks test_launch test_config test_config_store test_bls test_linuxboot test_log test_surface test_md_table test_md_discovery test_md_shadow test_eud_model test_soc_info
 
 .PHONY: test_ext4_checksums
 test: test_ext4_checksums

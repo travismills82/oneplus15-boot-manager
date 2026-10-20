@@ -445,6 +445,13 @@ SfbReadFileBytes (IN EFI_FILE_PROTOCOL *Root,
 BOOLEAN
 SfbIsEfiDriverFile (IN EFI_FILE_PROTOCOL *Root, IN CONST CHAR16 *Path);
 
+/* TRUE only for a bounded, well-formed PE32+ AArch64 UEFI application. */
+BOOLEAN
+SfbIsArm64EfiApplicationFile (
+  IN EFI_FILE_PROTOCOL *Root,
+  IN CONST CHAR16      *Path
+  );
+
 /*
  * Connect every controller in the system so that driver bindings installed by
  * a freshly loaded driver attach to the hardware they support.
@@ -528,6 +535,15 @@ EFI_STATUS
 SfbLaunchEntry (IN CONST SFB_BOOT_ENTRY *Entry,
                 IN BOOLEAN              ClearScreen,
                 IN SFB_BOOT_MODE        SessionMode);
+
+/* Launch with an explicit choice about Canoe's legacy active-slot retry
+ * refresh. Existing callers use SfbLaunchEntry and retain legacy behaviour;
+ * the Phase 1 selector disables the write after validating GPT read-only. */
+EFI_STATUS
+SfbLaunchEntryWithRetryPolicy (IN CONST SFB_BOOT_ENTRY *Entry,
+                               IN BOOLEAN              ClearScreen,
+                               IN SFB_BOOT_MODE        SessionMode,
+                               IN BOOLEAN              ResetActiveSlotRetry);
 
 /*
  * Load and start a single UEFI driver image named by a volume-relative path.

@@ -1788,9 +1788,10 @@ SfbLaunchBlsEntry (IN CONST SFB_BOOT_ENTRY *Entry,
 }
 
 EFI_STATUS
-SfbLaunchEntry (IN CONST SFB_BOOT_ENTRY *Entry,
-                IN BOOLEAN              ClearScreen,
-                IN SFB_BOOT_MODE        SessionMode)
+SfbLaunchEntryWithRetryPolicy (IN CONST SFB_BOOT_ENTRY *Entry,
+                               IN BOOLEAN              ClearScreen,
+                               IN SFB_BOOT_MODE        SessionMode,
+                               IN BOOLEAN              ResetActiveSlotRetry)
 {
   EFI_STATUS Status;
   BOOLEAN Managed;
@@ -1896,19 +1897,28 @@ SfbLaunchEntry (IN CONST SFB_BOOT_ENTRY *Entry,
       SfbSetLaunchRequestedMode (RequestedMode);
     }
     SfbBypassSecurity ();
-    Status = SfbLaunchImage (
+    Status = SfbLaunchImageWithRetryPolicy (
                Entry->DevicePath,
                Managed,
                EffectiveMode,
                EffectiveMode == SfbBootModeKmProfile ? &Profile : NULL,
                TzMapPtr,
-               OptionsPtr);
+               OptionsPtr,
+               ResetActiveSlotRetry);
   }
   if (EFI_ERROR (Status)) {
     DEBUG ((EFI_D_ERROR, "SFB: '%s' failed or returned: %r\n",
             Entry->Path, Status));
   }
   return Status;
+}
+
+EFI_STATUS
+SfbLaunchEntry (IN CONST SFB_BOOT_ENTRY *Entry,
+                IN BOOLEAN              ClearScreen,
+                IN SFB_BOOT_MODE        SessionMode)
+{
+  return SfbLaunchEntryWithRetryPolicy (Entry, ClearScreen, SessionMode, TRUE);
 }
 
 SFB_DEFAULT_RESULT

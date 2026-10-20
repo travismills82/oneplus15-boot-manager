@@ -56,6 +56,7 @@ fn policy_only_document_round_trips_and_old_documents_show_booting() {
     config
         .set_policy(PolicyUpdate {
             menu_mode: None,
+            boot_manager_menu: None,
             key_window_ms: None,
             menu_timeout_s: None,
             show_booting: Some(false),
@@ -70,6 +71,20 @@ fn policy_only_document_round_trips_and_old_documents_show_booting() {
     assert_eq!(reparsed.unknown[0].key, "custom-policy");
     assert!(ConfigDocument::parse(b"version 1\nshow-booting perhaps\n").is_err());
     assert!(ConfigDocument::parse(b"version 1\nfastbootd-mode2 perhaps\n").is_err());
+}
+
+#[test]
+fn phase1_frontend_is_additive_and_defaults_to_canoe() {
+    use canoe_bootmgr::config::BootManagerMenu;
+
+    let legacy = ConfigDocument::parse(b"version 1\n").unwrap();
+    assert_eq!(legacy.boot_manager_menu, BootManagerMenu::Canoe);
+    let phase1 = ConfigDocument::parse(b"version 1\nboot-manager-menu phase1\n").unwrap();
+    assert_eq!(phase1.boot_manager_menu, BootManagerMenu::Phase1);
+    assert!(String::from_utf8(phase1.serialize().unwrap())
+        .unwrap()
+        .contains("boot-manager-menu phase1\n"));
+    assert!(ConfigDocument::parse(b"version 1\nboot-manager-menu unsafe\n").is_err());
 }
 
 #[test]
@@ -112,6 +127,7 @@ fn key_window_has_a_legacy_read_floor_and_strict_write_bounds() {
         let before = edited.clone();
         let result = edited.set_policy(PolicyUpdate {
             menu_mode: None,
+            boot_manager_menu: None,
             key_window_ms: Some(value),
             menu_timeout_s: None,
             show_booting: None,

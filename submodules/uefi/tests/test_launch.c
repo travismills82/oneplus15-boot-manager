@@ -1224,6 +1224,16 @@ TestManagedLaunchResetsRetryBetweenLoadAndStart(void)
   assert(mLoadEvent < mRetryResetEvent);
   assert(mRetryResetEvent < mStartEvent);
   assert(mStartCount == 1);
+
+  ResetLaunchBackend ();
+  SfbBypassSecurity ();
+  assert(SfbLaunchImageWithRetryPolicy (
+           &Path, TRUE, SfbBootModeHonestUnlocked, NULL, NULL, NULL,
+           FALSE) == EFI_SUCCESS);
+  assert(mRetryResetCount == 0);
+  assert(mRetryResetMarkerCount == 0);
+  assert(mLoadEvent != 0);
+  assert(mStartCount == 1);
 }
 
 static void

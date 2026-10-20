@@ -2685,6 +2685,7 @@ CmdOem (IN CONST CHAR8 *Arg, IN VOID *Data, IN UINT32 Size)
       Request.Selector = Selector;
       Request.Mode = SfbGetLaunchSessionMode ();
       Request.AllowDefault = TRUE;
+      Request.ResetActiveSlotRetry = TRUE;
       WaitForFlashFinished ();
       Exec = SfbBootOnceExecute (&Request, CmdOemBootLaunchReady, NULL, NULL);
       /*

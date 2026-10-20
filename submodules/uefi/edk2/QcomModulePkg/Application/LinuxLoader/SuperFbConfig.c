@@ -460,6 +460,7 @@ SfbConfigParse (
   SfbCfgZero (Config, sizeof (*Config));
   Config->Mode = (SFB_UINT8)SFB_CONFIG_MODE_FAKE_LOCKED;
   Config->MenuMode = SfbConfigMenuSilent;
+  Config->BootMenu = SfbConfigBootMenuCanoe;
   Config->KeyWindowMs = SFB_CONFIG_KEY_WINDOW_DEFAULT;
   Config->MenuTimeoutSeconds = SFB_CONFIG_MENU_TIMEOUT_DEFAULT;
   Config->ShowBooting = TRUE;
@@ -604,6 +605,16 @@ SfbConfigParse (
      */
     if (SfbCfgKeyIs (Begin, KeyEnd, "menu-mode")) {
       if (!SfbCfgParseMenuMode (Value, End, &Config->MenuMode)) {
+        Config->RejectedLines++;
+      }
+      continue;
+    }
+    if (SfbCfgKeyIs (Begin, KeyEnd, "boot-manager-menu")) {
+      if (SfbCfgKeyIs (Value, End, "canoe")) {
+        Config->BootMenu = SfbConfigBootMenuCanoe;
+      } else if (SfbCfgKeyIs (Value, End, "phase1")) {
+        Config->BootMenu = SfbConfigBootMenuPhase1;
+      } else {
         Config->RejectedLines++;
       }
       continue;
@@ -831,7 +842,8 @@ SfbCfgEdit (const char *Bytes, SFB_UINTN Size, SFB_CFG_EDIT Edit,
     if (Policy == NULL || Policy->KeyWindowMs < SFB_CONFIG_KEY_WINDOW_MIN ||
         Policy->KeyWindowMs > SFB_CONFIG_KEY_WINDOW_MAX ||
         Policy->MenuTimeoutSeconds > SFB_CONFIG_MENU_TIMEOUT_MAX ||
-        Policy->MenuMode > SfbConfigMenuMenu) { return FALSE; }
+        Policy->MenuMode > SfbConfigMenuMenu ||
+        Policy->BootMenu > SfbConfigBootMenuPhase1) { return FALSE; }
   } else if (Edit == SfbEditAddFastboot) {
     /* One resident row is enough, and a second would be indistinguishable in
      * the menu. A taken id or a full table refuses rather than replacing. */
@@ -867,6 +879,7 @@ SfbCfgEdit (const char *Bytes, SFB_UINTN Size, SFB_CFG_EDIT Edit,
         (Selected && SfbCfgKeyIs (Begin, KeyEnd, "mode")) ||
         (!InEntry && Edit == SfbEditPolicy &&
           (SfbCfgKeyIs (Begin, KeyEnd, "menu-mode") ||
+           SfbCfgKeyIs (Begin, KeyEnd, "boot-manager-menu") ||
            SfbCfgKeyIs (Begin, KeyEnd, "key-window") ||
            SfbCfgKeyIs (Begin, KeyEnd, "menu-timeout") ||
            SfbCfgKeyIs (Begin, KeyEnd, "timeout") ||
@@ -885,11 +898,16 @@ SfbCfgEdit (const char *Bytes, SFB_UINTN Size, SFB_CFG_EDIT Edit,
               !SfbCfgAppend (Output, Capacity, &Used, "\n", 1)) { return FALSE; }
         } else if (Edit == SfbEditPolicy) {
           const char *Menu = Policy->MenuMode == SfbConfigMenuMenu ? "menu-mode menu\n" : "menu-mode silent\n";
+          const char *BootMenu = Policy->BootMenu == SfbConfigBootMenuPhase1
+                                   ? "boot-manager-menu phase1\n"
+                                   : "boot-manager-menu canoe\n";
           const char *Show = Policy->ShowBooting ? "show-booting yes\n" : "show-booting no\n";
           const char *Fastbootd = Policy->FastbootdMode2
                                      ? "fastbootd-mode2 yes\n"
                                      : "fastbootd-mode2 no\n";
           if (!SfbCfgAppend (Output, Capacity, &Used, Menu, SfbCfgLength (Menu)) ||
+              !SfbCfgAppend (Output, Capacity, &Used, BootMenu,
+                             SfbCfgLength (BootMenu)) ||
               !SfbCfgAppendNumber (Output, Capacity, &Used, "key-window ", Policy->KeyWindowMs) ||
               !SfbCfgAppendNumber (Output, Capacity, &Used, "menu-timeout ", Policy->MenuTimeoutSeconds) ||
               !SfbCfgAppend (Output, Capacity, &Used, Show, SfbCfgLength (Show)) ||

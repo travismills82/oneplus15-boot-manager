@@ -66,6 +66,33 @@ pub enum MenuMode {
     Menu,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum BootManagerMenu {
+    Canoe,
+    Phase1,
+}
+
+impl BootManagerMenu {
+    pub(crate) fn parse(value: &str) -> Result<Self, ConfigError> {
+        match value {
+            "canoe" => Ok(Self::Canoe),
+            "phase1" => Ok(Self::Phase1),
+            _ => Err(ConfigError::Field {
+                field: "boot-manager-menu".to_owned(),
+                reason: format!("expected canoe or phase1, got {value:?}"),
+            }),
+        }
+    }
+
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Canoe => "canoe",
+            Self::Phase1 => "phase1",
+        }
+    }
+}
+
 impl MenuMode {
     pub(crate) fn parse(value: &str) -> Result<Self, ConfigError> {
         match value {
@@ -159,6 +186,8 @@ pub struct ConfigDocument {
     pub entries: Vec<ConfigEntry>,
     pub generation: u32,
     pub menu_mode: MenuMode,
+    #[serde(default = "default_boot_manager_menu")]
+    pub boot_manager_menu: BootManagerMenu,
     pub key_window_ms: u32,
     pub menu_timeout_s: u32,
     #[serde(default = "default_show_booting")]
@@ -188,6 +217,7 @@ pub struct EntryRequest {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PolicyUpdate {
     pub menu_mode: Option<MenuMode>,
+    pub boot_manager_menu: Option<BootManagerMenu>,
     pub key_window_ms: Option<u32>,
     pub menu_timeout_s: Option<u32>,
     pub show_booting: Option<bool>,
@@ -206,4 +236,8 @@ pub const fn default_show_booting() -> bool {
 
 pub const fn default_fastbootd_mode2() -> bool {
     true
+}
+
+pub const fn default_boot_manager_menu() -> BootManagerMenu {
+    BootManagerMenu::Canoe
 }

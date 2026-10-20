@@ -26,7 +26,8 @@ static UINTN Writes, Flushes, Event, ClearEvent, TargetWriteEvent, ReadyEvent,
 static EFI_STATUS ReadError, WriteError, FlushError;
 static UINTN LaunchedIndex;
 static BOOLEAN ManagedAndroid, FailTargetWrite, FailLaunch, FailReady,
-               ConfiguredDefault, CursorDefault, RequireClearBeforeLaunch;
+               ConfiguredDefault, CursorDefault, RequireClearBeforeLaunch,
+               Phase1Ready, RetryResetAllowed;
 static SFB_BOOT_MODE LaunchedMode;
 static BOOLEAN TargetPendingSeen;
 
@@ -77,6 +78,7 @@ static void ResetMisc (const char *Command) {
   FailLaunch = FALSE; FailReady = FALSE;
   ConfiguredDefault = TRUE; CursorDefault = FALSE;
   RequireClearBeforeLaunch = TRUE;
+  Phase1Ready = FALSE; RetryResetAllowed = TRUE;
   LaunchedMode = SfbBootModeHonestUnlocked; TargetPendingSeen = FALSE;
   ReadError = WriteError = FlushError = EFI_SUCCESS;
 }
@@ -100,8 +102,12 @@ BOOLEAN SfbIsManagedAblEntry (CONST SFB_BOOT_ENTRY *Entry) {
 }
 VOID SfbFreeMenu (SFB_MENU_STATE *Menu) { (void)Menu; }
 VOID SfbSetLaunchLockPolicy (SFB_CONFIG_LOCK_POLICY Policy) { (void)Policy; }
-EFI_STATUS SfbLaunchEntry (CONST SFB_BOOT_ENTRY *Entry, BOOLEAN Clear, SFB_BOOT_MODE Mode) {
+EFI_STATUS SfbLaunchEntryWithRetryPolicy (CONST SFB_BOOT_ENTRY *Entry,
+                                          BOOLEAN Clear,
+                                          SFB_BOOT_MODE Mode,
+                                          BOOLEAN ResetActiveSlotRetry) {
   (void)Clear; LaunchEvent = ++Event;
+  RetryResetAllowed = ResetActiveSlotRetry;
   if (RequireClearBeforeLaunch) {
     assert(ClearEvent != 0 && ClearEvent < LaunchEvent);
   }
@@ -119,6 +125,13 @@ EFI_STATUS SfbLaunchEntry (CONST SFB_BOOT_ENTRY *Entry, BOOLEAN Clear, SFB_BOOT_
   else assert(!"unexpected launch target");
   LaunchedMode = Mode;
   return FailLaunch ? EFI_DEVICE_ERROR : EFI_SUCCESS;
+}
+EFI_STATUS SfbLaunchEntry (CONST SFB_BOOT_ENTRY *Entry, BOOLEAN Clear, SFB_BOOT_MODE Mode) {
+  return SfbLaunchEntryWithRetryPolicy (Entry, Clear, Mode, TRUE);
+}
+BOOLEAN SfbPhase1BootOnceSelectorReady (CONST CHAR8 *Selector, SFB_BOOT_MODE Mode) {
+  (void)Mode;
+  return (BOOLEAN)(Phase1Ready && strcmp (Selector, "android") == 0);
 }
 
 /* The handoff callback the caller would pass. It records that the host has been
@@ -232,6 +245,7 @@ static SFB_BOOT_ONCE_EXEC_RESULT RunDirect (
   Request.Target = Target;
   Request.Mode = Mode;
   Request.AllowDefault = AllowDefault;
+  Request.ResetActiveSlotRetry = TRUE;
   return SfbBootOnceExecute(&Request, Ready, &ReadyEvent, &TargetPendingSeen);
 }
 
@@ -382,6 +396,32 @@ static void TestPlainRecordCompat (void) {
   memcpy(Before, Misc, sizeof Misc); Event = ClearEvent = LaunchEvent = 0; Writes = Flushes = 0;
   assert(SfbBootOnceConsume(SfbBootModeHonestUnlocked) == SfbBootOnceMenu);
   assert(LaunchedIndex == 1 && ClearEvent < LaunchEvent);
+}
+
+static void TestPhase1Restriction (void) {
+  /* A stored selector cannot bypass the Phase 1 active-slot and sidecar gate.
+   * It is consumed, performs no target write or launch, and opens the menu. */
+  ResetMisc("canoe-once:android+recovery");
+  assert(SfbBootOnceConsumePolicy(SfbBootModeAblFakeLocked, FALSE) ==
+         SfbBootOnceMenu);
+  assert(Misc[0] == 0 && Writes == 1 && TargetWriteEvent == 0);
+  assert(LaunchedIndex == SFB_NO_INDEX && LaunchEvent == 0);
+  assert(SfbBootOnceTakeNotice() == SfbBootOnceNoticeRecordDropped);
+
+  /* A selector that passes the Phase 1 validator is launched once, but through
+   * the no-GPT-refresh policy. */
+  ResetMisc("canoe-once:android"); Phase1Ready = TRUE;
+  assert(SfbBootOnceConsumePolicy(SfbBootModeAblFakeLocked, FALSE) ==
+         SfbBootOnceMenu);
+  assert(LaunchedIndex == 0 && LaunchEvent != 0 && !RetryResetAllowed);
+  assert(Misc[0] == 0 && Writes == 1);
+
+  /* The resident Super Fastboot surface remains available. */
+  ResetMisc("canoe-once:fastboot");
+  assert(SfbBootOnceConsumePolicy(SfbBootModeAblFakeLocked, FALSE) ==
+         SfbBootOnceFastboot);
+  assert(Misc[0] == 0 && Writes == 1 && LaunchEvent == 0);
+  assert(SfbBootOnceTakeNotice() == SfbBootOnceNoticeNone);
 }
 
 static void TestArmBudgets (void) {
@@ -600,7 +640,7 @@ int main (void) {
   Media.BlockSize = sizeof Misc; Media.IoAlign = 4096; Io.Media = &Media;
   Io.ReadBlocks = Read; Io.WriteBlocks = Write; Io.FlushBlocks = Flush;
   TestOemParser(); TestDirectLaunch();
-  TestPlainRecordCompat(); TestArmBudgets(); TestReadAndTaggedConsume();
+  TestPlainRecordCompat(); TestPhase1Restriction(); TestArmBudgets(); TestReadAndTaggedConsume();
   TestTagRefusals(); TestLaunchFailureNotice(); TestMalformedRecords();
   TestClearAndFailure();
   puts("boot once: OEM parser, direct/default/session-mode launch, plain and tagged records, selector budgets, managed-row policy, ordering and failure refusal passed");

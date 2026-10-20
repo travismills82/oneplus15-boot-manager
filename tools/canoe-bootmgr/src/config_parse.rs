@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::config::{
     ConfigDocument, ConfigEntry, ConfigError, DEFAULT_KEY_WINDOW_MS, DEFAULT_MENU_TIMEOUT_S,
-    DeviceInfoRepair, EntryAction, MAX_BYTES, MAX_GENERATION, MAX_KEY_WINDOW_MS,
+    BootManagerMenu, DeviceInfoRepair, EntryAction, MAX_BYTES, MAX_GENERATION, MAX_KEY_WINDOW_MS,
     MAX_MENU_TIMEOUT_S, MAX_OPTIONS_CHARS, MIN_KEY_WINDOW_MS, MenuMode, RawLine, Role,
     canonical_image, printable, valid_id, validate_policy_range, validate_title,
 };
@@ -38,6 +38,7 @@ pub(crate) fn parse(bytes: &[u8]) -> Result<ConfigDocument, ConfigError> {
     let mut entry_seen = false;
     let mut generation = 0;
     let mut menu_mode = MenuMode::Silent;
+    let mut boot_manager_menu = BootManagerMenu::Canoe;
     let mut key_window_ms = DEFAULT_KEY_WINDOW_MS;
     let mut menu_timeout_s = DEFAULT_MENU_TIMEOUT_S;
     let mut show_booting = true;
@@ -114,6 +115,9 @@ pub(crate) fn parse(bytes: &[u8]) -> Result<ConfigDocument, ConfigError> {
             "menu-mode" => {
                 menu_mode = MenuMode::parse(value)?;
             }
+            "boot-manager-menu" => {
+                boot_manager_menu = BootManagerMenu::parse(value)?;
+            }
             "key-window" => {
                 // Legacy numeric values remain readable, with the same escape floor
                 // and upper bound as firmware. New policy writes are strict.
@@ -170,6 +174,7 @@ pub(crate) fn parse(bytes: &[u8]) -> Result<ConfigDocument, ConfigError> {
         entries,
         generation,
         menu_mode,
+        boot_manager_menu,
         key_window_ms,
         menu_timeout_s,
         show_booting,

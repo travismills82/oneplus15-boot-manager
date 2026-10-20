@@ -32,6 +32,7 @@ In 7.0.11 the boot policy is explicit. Global keys must appear before the first 
 | `version` | `1` | required | Configuration format version |
 | `generation` | `0..4294967295` | `0` | Monotonic installed-generation number |
 | `menu-mode` | `silent`, `menu` | `silent` for fresh installs | Startup policy |
+| `boot-manager-menu` | `canoe`, `phase1` | `canoe` | Native menu frontend; `phase1` enables the experimental five-entry OnePlus 15 selector |
 | `key-window` | `500..=5000` | `1200` | Silent startup Volume Up window in milliseconds |
 | `menu-timeout` | `0..=300` | `3` | Menu countdown in seconds; only in Menu mode |
 | `show-booting` | `yes`, `no` | `yes` | Display the Booting message when launching an image |
@@ -114,6 +115,7 @@ The complete writer grammar is:
 version 1
 generation N
 menu-mode silent|menu
+boot-manager-menu canoe|phase1
 key-window 1200
 menu-timeout 3
 show-booting yes

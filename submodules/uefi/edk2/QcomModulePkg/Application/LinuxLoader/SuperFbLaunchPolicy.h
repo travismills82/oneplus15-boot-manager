@@ -81,4 +81,18 @@ SfbLaunchImage (
   IN CONST CHAR16                   *LoadOptions
   );
 
+/* Internal policy variant. ResetActiveSlotRetry controls Canoe's legacy,
+ * active-slot-only retry refresh. Phase 1 passes FALSE so merely selecting
+ * Android never mutates GPT metadata. */
+EFI_STATUS
+SfbLaunchImageWithRetryPolicy (
+  IN EFI_DEVICE_PATH_PROTOCOL       *DevicePath,
+  IN BOOLEAN                         Managed,
+  IN SFB_BOOT_MODE                   EffectiveMode,
+  IN CONST SFB_MODE2_PROFILE        *Profile,
+  IN CONST SFB_TZ_MAP               *TzMap,
+  IN CONST CHAR16                   *LoadOptions,
+  IN BOOLEAN                         ResetActiveSlotRetry
+  );
+
 #endif

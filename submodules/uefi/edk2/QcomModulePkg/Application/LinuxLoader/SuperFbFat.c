@@ -970,6 +970,40 @@ SfbIsEfiDriverFile (IN EFI_FILE_PROTOCOL *Root, IN CONST CHAR16 *Path)
                    Subsystem == EFI_IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER);
 }
 
+BOOLEAN
+SfbIsArm64EfiApplicationFile (
+  IN EFI_FILE_PROTOCOL *Root,
+  IN CONST CHAR16      *Path
+  )
+{
+  UINT8   Header[8192];
+  UINTN   Read = 0;
+  UINT32  PeOffset;
+  UINTN   OptionalAt;
+  UINT16  OptionalBytes;
+
+  if (Root == NULL || Path == NULL ||
+      EFI_ERROR (SfbReadFileBytes (Root, Path, Header, sizeof (Header), &Read)) ||
+      Read < 0x40 || SfbLe16 (Header, 0) != EFI_IMAGE_DOS_SIGNATURE) {
+    return FALSE;
+  }
+  PeOffset = SfbLe32 (Header, 0x3c);
+  /* Signature, COFF header and fixed PE32+ fields through Subsystem. */
+  if ((UINTN)PeOffset > Read || Read - (UINTN)PeOffset < 4 + 20 + 70 ||
+      SfbLe32 (Header, PeOffset) != EFI_IMAGE_NT_SIGNATURE ||
+      SfbLe16 (Header, PeOffset + 4) != EFI_IMAGE_MACHINE_AARCH64) {
+    return FALSE;
+  }
+  OptionalAt = (UINTN)PeOffset + 4 + 20;
+  OptionalBytes = SfbLe16 (Header, (UINTN)PeOffset + 4 + 16);
+  if (OptionalBytes < 70 ||
+      SfbLe16 (Header, OptionalAt) != EFI_IMAGE_NT_OPTIONAL_HDR64_MAGIC) {
+    return FALSE;
+  }
+  return (BOOLEAN)(SfbLe16 (Header, OptionalAt + 68) ==
+                   EFI_IMAGE_SUBSYSTEM_EFI_APPLICATION);
+}
+
 VOID
 SfbReadAnsiDescription (IN EFI_FILE_PROTOCOL *Root,
                         IN CONST CHAR16      *Path,

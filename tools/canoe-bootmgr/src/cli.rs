@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand};
 
 pub use crate::cli_execute::{Output, execute, human};
-use crate::config::{DeviceInfoRepair, EntryAction, MenuMode, Role};
+use crate::config::{BootManagerMenu, DeviceInfoRepair, EntryAction, MenuMode, Role};
 
 #[derive(Debug, Parser)]
 #[command(name = "canoe-bootmgr", version = crate::version::VERSION, about = "Manage a mounted CANOE-BDS boot root")]
@@ -48,6 +48,8 @@ pub enum ConfigCommand {
     SetPolicy {
         #[arg(long, value_parser = MenuMode::parse)]
         menu_mode: Option<MenuMode>,
+        #[arg(long, value_parser = BootManagerMenu::parse)]
+        boot_manager_menu: Option<BootManagerMenu>,
         #[arg(long)]
         key_window_ms: Option<u32>,
         #[arg(long)]

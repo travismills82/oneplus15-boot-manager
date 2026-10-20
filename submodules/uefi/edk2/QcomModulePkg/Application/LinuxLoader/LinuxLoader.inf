@@ -102,6 +102,10 @@
 	SuperFbEntries.c
 	SuperFbMenu.c
 	SuperFbMenuScaffold.c
+	SuperFbPhase1Model.h
+	SuperFbPhase1Model.c
+	SuperFbPhase1Menu.h
+	SuperFbPhase1Menu.c
 	SuperFbBrowser.c
 	SuperFbSlots.h
 	SuperFbSlotRetry.h

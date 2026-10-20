@@ -85,6 +85,7 @@
 #include "SuperFbLog.h"
 #include "SuperFbBootOnce.h"
 #include "SuperFbLaunchPolicy.h"
+#include "SuperFbPhase1Menu.h"
 
 #define MAX_APP_STR_LEN 64
 #define MAX_NUM_FS 10
@@ -256,14 +257,18 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
      * misc boot-once is consumed before either power-on policy. Its command
      * field is already cleared and flushed when this returns a destination.
      */
-    BootOnceResult = SfbBootOnceConsume (Mode);
+    BootOnceResult = SfbBootOnceConsumePolicy (
+                       Mode,
+                       (BOOLEAN)(Config.BootMenu != SfbConfigBootMenuPhase1));
     if (BootOnceResult == SfbBootOnceFastboot) {
       EnterFastboot = TRUE;
       goto enter_fastboot;
     }
     if (BootOnceResult == SfbBootOnceMenu) {
       SfbShowEnteringMenu ();
-      if (!SfbRunBootMenu (Mode, FALSE, FALSE)) {
+      if (!(Config.BootMenu == SfbConfigBootMenuPhase1
+              ? SfbRunPhase1BootMenu (Mode, FALSE, FALSE)
+              : SfbRunBootMenu (Mode, FALSE, FALSE))) {
         Status = EFI_SUCCESS;
         goto stack_guard_update_default;
       }
@@ -292,7 +297,9 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
     } else if (SfbBootRootIsEmptyState (BootRootState)) {
       DEBUG ((EFI_D_INFO, "SFB: MARK bootflow first-run=1\n"));
       SfbShowEnteringMenu ();
-      if (!SfbRunBootMenu (Mode, TRUE, TRUE)) {
+      if (!(Config.BootMenu == SfbConfigBootMenuPhase1
+              ? SfbRunPhase1BootMenu (Mode, TRUE, TRUE)
+              : SfbRunBootMenu (Mode, TRUE, TRUE))) {
         Status = EFI_SUCCESS;
         goto stack_guard_update_default;
       }
@@ -304,7 +311,9 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
         /* Resolve again after discovery. Missing file/BLS targets fall through
          * to the menu; a configured resident action bypasses image launching
          * and enters the same fastboot loop as the permanent menu row. */
-        DefaultResult = SfbLaunchDefaultEntry (Mode);
+        DefaultResult = Config.BootMenu == SfbConfigBootMenuPhase1
+                          ? SfbLaunchPhase1Default (Mode)
+                          : SfbLaunchDefaultEntry (Mode);
         if (DefaultResult == SfbDefaultFastboot) {
           EnterFastboot = TRUE;
           goto enter_fastboot;
@@ -312,9 +321,13 @@ LinuxLoaderEntry (IN EFI_HANDLE ImageHandle, IN EFI_SYSTEM_TABLE *SystemTable)
       }
 
       SfbShowEnteringMenu ();
-      if (!SfbRunBootMenu (
-            Mode,
-            SfbPowerOnMenuCountdown (Config.MenuMode, PowerOnKey), FALSE)) {
+      if (!(Config.BootMenu == SfbConfigBootMenuPhase1
+              ? SfbRunPhase1BootMenu (
+                  Mode, SfbPowerOnMenuCountdown (
+                          Config.MenuMode, PowerOnKey), FALSE)
+              : SfbRunBootMenu (
+                  Mode, SfbPowerOnMenuCountdown (
+                          Config.MenuMode, PowerOnKey), FALSE))) {
         Status = EFI_SUCCESS;
         goto stack_guard_update_default;
       }

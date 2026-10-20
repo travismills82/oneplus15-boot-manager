@@ -103,6 +103,7 @@ pub fn execute(cli: &Cli) -> Result<Output, Box<dyn std::error::Error>> {
             command:
                 ConfigCommand::SetPolicy {
                     menu_mode,
+                    boot_manager_menu,
                     key_window_ms,
                     menu_timeout_s,
                     show_booting,
@@ -111,6 +112,7 @@ pub fn execute(cli: &Cli) -> Result<Output, Box<dyn std::error::Error>> {
         } => {
             config.set_policy(PolicyUpdate {
                 menu_mode: *menu_mode,
+                boot_manager_menu: *boot_manager_menu,
                 key_window_ms: *key_window_ms,
                 menu_timeout_s: *menu_timeout_s,
                 show_booting: *show_booting,

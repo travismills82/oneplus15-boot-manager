@@ -66,6 +66,13 @@ typedef enum {
   SfbConfigMenuMenu
 } SFB_CONFIG_MENU_MODE;
 
+/* The upstream Canoe UI remains the default and recovery surface. Phase 1 is
+ * opt-in until its rendering and input path have been qualified on hardware. */
+typedef enum {
+  SfbConfigBootMenuCanoe = 0,
+  SfbConfigBootMenuPhase1
+} SFB_CONFIG_BOOT_MENU;
+
 typedef enum {
   SfbConfigActionNone = 0,
   SfbConfigActionFastboot
@@ -108,6 +115,7 @@ typedef struct {
   SFB_BOOLEAN            Valid;
   SFB_UINT32             Generation;
   SFB_CONFIG_MENU_MODE   MenuMode;
+  SFB_CONFIG_BOOT_MENU   BootMenu;
   SFB_UINT32             KeyWindowMs;
   SFB_UINT32             MenuTimeoutSeconds;
   SFB_BOOLEAN            ShowBooting;

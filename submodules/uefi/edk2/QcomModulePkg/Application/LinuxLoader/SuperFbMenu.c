@@ -41,7 +41,7 @@ CONST CHAR8 *gSfbMenuModuleTag = "SuperFbMenu";
 #define SFB_WIDEN_(x)    L##x
 #define SFB_WIDEN(x)     SFB_WIDEN_ (x)
 #define SFB_MENU_CREDIT  L"gbl_root_canoe " SFB_WIDEN (SFB_BDS_VERSION) L" by 1vivy"
-#define SFB_ATTR_SELECTED  EFI_TEXT_ATTR (EFI_BLACK, EFI_LIGHTGRAY)
+#define SFB_ATTR_SELECTED  EFI_TEXT_ATTR (EFI_WHITE, EFI_BLUE)
 #define SFB_ATTR_TITLE     EFI_TEXT_ATTR (EFI_WHITE, EFI_BLACK)
 
 /* Room for the "[E] " removable-media prefix in a formatted row. */

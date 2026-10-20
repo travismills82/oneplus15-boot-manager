@@ -1,5 +1,5 @@
 use crate::config::{
-    ConfigDocument, ConfigEntry, ConfigError, DEFAULT_MENU_TIMEOUT_S, DeviceInfoRepair,
+    BootManagerMenu, ConfigDocument, ConfigEntry, ConfigError, DEFAULT_MENU_TIMEOUT_S, DeviceInfoRepair,
     EntryRequest, MAX_ENTRIES, MAX_GENERATION, MenuMode, PolicyUpdate, Role, canonical_image,
     validate_mode, validate_policy, validate_request,
 };
@@ -11,6 +11,7 @@ impl ConfigDocument {
             entries: Vec::new(),
             generation: 0,
             menu_mode: MenuMode::Silent,
+            boot_manager_menu: BootManagerMenu::Canoe,
             key_window_ms: super::config::DEFAULT_KEY_WINDOW_MS,
             menu_timeout_s: DEFAULT_MENU_TIMEOUT_S,
             show_booting: true,
@@ -203,6 +204,9 @@ impl ConfigDocument {
         }
         if let Some(menu_mode) = update.menu_mode {
             self.menu_mode = menu_mode;
+        }
+        if let Some(boot_manager_menu) = update.boot_manager_menu {
+            self.boot_manager_menu = boot_manager_menu;
         }
         if let Some(key_window_ms) = update.key_window_ms {
             self.key_window_ms = key_window_ms;
