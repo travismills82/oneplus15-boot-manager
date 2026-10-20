@@ -42,7 +42,7 @@ jobs:
             --boot-root "$example_root" config show >/dev/null
       - name: Run UEFI host contracts
         run: make -C submodules/uefi test
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: phase1-ui-prototype-${{ github.sha }}
           path: ui-prototype/dist/
@@ -71,7 +71,7 @@ jobs:
             .work/phase1-experimental/EXPERIMENTAL-NOT-VALIDATED-ON-HARDWARE.txt
           (cd .work/phase1-experimental && sha256sum -- *.efi > SHA256SUMS)
           git rev-parse HEAD > .work/phase1-experimental/SOURCE_COMMIT
-      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: phase1-experimental-firmware-${{ github.sha }}
           path: .work/phase1-experimental/
