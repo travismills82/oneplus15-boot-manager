@@ -1,0 +1,10 @@
+{
+  "name": "oneplus15-boot-manager-ui-prototype",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-ui.mjs",
+    "test": "node --test tests/*.test.mjs"
+  }
+}

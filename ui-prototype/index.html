@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" data-theme="midnight">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Safe browser-only prototype of the OnePlus 15 Phase 1 boot manager." />
+    <title>OnePlus 15 Boot Manager — UI Prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="shell" aria-labelledby="title">
+      <section class="boot-panel">
+        <header class="masthead">
+          <div>
+            <p class="eyebrow">CANOE-BDS / PHASE 1</p>
+            <h1 id="title">ONEPLUS 15<br /><span>BOOT MANAGER</span></h1>
+          </div>
+          <div class="device-state" aria-label="Boot state">
+            <span class="pulse"></span>
+            <div><small>ACTIVE SLOT</small><strong id="active-slot-label">A</strong></div>
+          </div>
+        </header>
+
+        <div class="notice"><strong>EXPERIMENTAL</strong><span>NOT VALIDATED ON HARDWARE</span></div>
+        <p class="countdown" id="countdown" aria-live="polite"></p>
+        <div class="entries" id="entries" role="listbox" aria-label="Boot entries"></div>
+        <footer>
+          <span><kbd>VOL ▲</kbd><kbd>VOL ▼</kbd> Navigate</span>
+          <span><kbd>POWER</kbd> Select</span>
+          <span class="safety">Inactive-slot switching disabled</span>
+        </footer>
+      </section>
+
+      <aside class="controls" aria-label="Prototype controls">
+        <div>
+          <p class="eyebrow">SIMULATION CONTROLS</p>
+          <h2>Menu configuration</h2>
+          <p>These controls change browser state only. This page has no device, ADB, fastboot, or partition access.</p>
+        </div>
+        <label>Active slot
+          <select id="active-slot"><option value="a">Slot A</option><option value="b">Slot B</option><option value="unknown">Unknown</option></select>
+        </label>
+        <label>Default entry
+          <select id="default-entry"></select>
+        </label>
+        <label>Countdown <output id="timeout-value">5 seconds</output>
+          <input id="timeout" type="range" min="0" max="30" value="5" />
+        </label>
+        <label>Theme
+          <select id="theme"><option value="midnight">Midnight blue</option><option value="slate">Slate</option><option value="contrast">High contrast</option></select>
+        </label>
+        <button id="restart" type="button">Restart simulation</button>
+        <dl class="legend">
+          <div><dt>Fallback</dt><dd>Original Canoe menu retained</dd></div>
+          <div><dt>Slot writes</dt><dd>None</dd></div>
+          <div><dt>Prototype I/O</dt><dd>Simulation only</dd></div>
+        </dl>
+      </aside>
+    </main>
+
+    <dialog id="transition">
+      <div class="transition-mark"></div>
+      <p class="eyebrow">SIMULATED HANDOFF</p>
+      <h2 id="transition-title">Preparing entry</h2>
+      <p id="transition-detail"></p>
+      <button id="return" type="button">Return to boot menu</button>
+    </dialog>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

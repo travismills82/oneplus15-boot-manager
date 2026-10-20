@@ -22,6 +22,7 @@ venv/
 .cache/*
 # Rust — every in-tree tool, not just the first one
 tools/*/target/
+ui-prototype/dist/
 
 ENV/
 
